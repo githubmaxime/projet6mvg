@@ -35,14 +35,3 @@ module.exports = {
   User,
   validateUser,
 }
-
-// userSchema.statics.joiValidate = function(obj) {
-// 	var Joi = require('joi');
-// 	var schema = {
-// 		email: Joi.types.String().min(6).max(30).required(),
-// 		password: Joi.types.String().min(8).max(30).regex(/[a-zA-Z0-9]{3,30}/).required(),
-// 	}
-// 	return Joi.validate(obj, schema);
-// }
-
-// module.exports = mongoose.model('User', userSchema)

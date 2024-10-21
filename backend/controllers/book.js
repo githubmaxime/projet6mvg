@@ -9,12 +9,12 @@ exports.createBook = async (req, res, next) => {
     const book = new Book ({
         ...bookObject,
         userId: req.auth.userId,
-        imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}_thumbnail.webp`
+        imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename.replace(/\.jpeg|\.jpg|\.png/g, "_")}thumbnail.webp`
     });
-
+    
     await book.save()
 
-    res.status(201).json({ message: 'Objet enregistré!'});
+    res.status(201).json({ message: 'book saved!'});
 
     } catch(error) {
         res.status(400).json({ error });
@@ -24,7 +24,7 @@ exports.createBook = async (req, res, next) => {
 exports.modifyBook =  (req, res, next) => {
     const bookObject = req.file ? {
         ...JSON.parse(req.body.book),
-        imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}_thumbnail.webp`
+        imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename.replace(/\.jpeg|\.jpg|\.png/g, "_")}thumbnail.webp`
     } : { ...req.body };
 
     delete bookObject._userId;
@@ -33,12 +33,15 @@ exports.modifyBook =  (req, res, next) => {
             if (book.userId != req.auth.userId) {
                 res.status(401).json({ message : 'Not authorized'});
             } else {
-                const filename = book.imageUrl.split('/images/')[1];
-                const filenameThumbnail = filename.split('_thumbnail.webp')[0];
-                fs.unlink(`images/${filenameThumbnail}`, () => { });
-                fs.unlink(`images/${filename}`, () => { });
+                if(bookObject.imageUrl){
+                    const filenameThumb = book.imageUrl.split('/images/')[1];
+                    const filenameLarge = filenameThumb.split('_thumbnail')[0];
+                    fs.unlink(`images/${filenameLarge}.jpg`, () => { });
+                    fs.unlink(`images/${filenameLarge}.png`, () => { });
+                    fs.unlink(`images/${filenameThumb}`, () => { });
+                }
                 Book.updateOne({ _id: req.params.id}, { ...bookObject, _id: req.params.id})
-                .then(() => res.status(200).json({message : 'Objet modifié!'}))
+                .then(() => res.status(200).json({message : 'book modified!'}))
                 .catch(error => res.status(401).json({ error }));
             }
         })
@@ -53,13 +56,13 @@ Book.findOne({ _id: req.params.id})
         if (book.userId != req.auth.userId) {
             res.status(401).json({message: 'Not authorized'});
         } else {
-            const filename = book.imageUrl.split('/images/')[1];
-            const filenameThumbnail = filename.split('_thumbnail.webp')[0];
-            fs.unlink(`images/${filenameThumbnail}`, () => {
-            });
-            fs.unlink(`images/${filename}`, () => {
+            const filenameThumb = book.imageUrl.split('/images/')[1];
+            const filenameLarge = filenameThumb.split('_thumbnail')[0];
+            fs.unlink(`images/${filenameLarge}.jpg`, () => { });
+            fs.unlink(`images/${filenameLarge}.png`, () => { });
+            fs.unlink(`images/${filenameThumb}`, () => {
                 book.deleteOne({_id: req.params.id})
-                    .then(() => { res.status(200).json({message: 'objet supprimé'})})
+                    .then(() => { res.status(200).json({message: 'book deleted'})})
                     .catch(error => res.status(401).json({ error }));
             });
         }
@@ -86,7 +89,7 @@ Book.find()
     .then(books => {
         books.sort((a, b) => b.averageRating - a.averageRating);
         const bestRatedBooks = books.slice(0, 3);
-        res.status(200).json(bestRatedBooks)})
+        res.status(201).json(bestRatedBooks)})
     .catch(error => res.status(404).json({ error }));
 };
 
@@ -107,6 +110,6 @@ Book.findOne({ _id: req.params.id })
                 res.status(401).json({message: 'Book already rated'});
             }
         })
-    .then(book => res.status(200).json(book))
+    .then(book => res.status(201).json(book))
     .catch(error => res.status(500).json({ error }));
   };
