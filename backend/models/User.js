@@ -13,7 +13,9 @@ const userSchema = mongoose.Schema({
 
 userSchema.plugin(uniqueValidator);
 
-const User = mongoose.model('user', userSchema)
+// Vérifier si le modèle existe déjà avant de le créer
+const User = mongoose.models.User || mongoose.model('User', userSchema);
+// const User = mongoose.model('user', userSchema)
 
 const validateUser = (user) => {
   const schema = Joi.object({
